@@ -1,51 +1,101 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'login_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:wl/anim/animated_route.dart';
+import 'package:wl/page/helloy_page.dart';
+import 'package:wl/page/login_page.dart';
+import 'package:wl/page/home_page.dart';
 
-//создание класса для отображения заставки
 class SplashScreen extends StatefulWidget {
+  const SplashScreen({Key? key}) : super(key: key);
+
   @override
-  State<StatefulWidget> createState() => InitState();
+  State<SplashScreen> createState() => SplashScreenState();
 }
 
-class InitState extends State<SplashScreen> {
+class SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<Color?> _colorAnimation;
+  bool _isFirstLaunch = true;
+
   @override
   void initState() {
     super.initState();
+    _controller = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    );
+    _colorAnimation = ColorTween(
+      begin: const Color(0xFF3F51B5),
+      end: const Color(0xFF2196F3),
+    ).animate(_controller);
+    _controller.forward();
+    _checkIfFirstLaunch();
+  }
+
+  Future<void> _checkIfFirstLaunch() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasLaunched = prefs.getBool('hasLaunched') ?? false;
+    setState(() {
+      _isFirstLaunch = !hasLaunched;
+    });
+    if (!hasLaunched) {
+      await prefs.setBool('hasLaunched', true);
+    }
     startTimer();
   }
 
-  startTimer() async {
-    var duration = Duration(seconds: 4);
-    return Timer(duration, loginPan);
+  void startTimer() {
+    Timer(const Duration(seconds: 3), () {
+      if (_isFirstLaunch) {
+        Navigator.of(context).pushAndRemoveUntil(
+          AnimatedRoute(
+              page: Helloy()), // Используем анимацию из отдельного файла
+          (route) => false,
+        );
+      } else {
+        _redirectBasedOnSession();
+      }
+    });
   }
 
-  // функция перехода к логину
-  loginPan() async {
-    Navigator.pushReplacement(
-        context, MaterialPageRoute(builder: (context) => LoginScreen()));
+  void _redirectBasedOnSession() {
+    final session = Supabase.instance.client.auth.currentSession;
+    if (session == null) {
+      Navigator.of(context).pushAndRemoveUntil(
+        AnimatedRoute(page: LoginPage()),
+        (route) => false,
+      );
+    } else {
+      Navigator.of(context).pushAndRemoveUntil(
+        AnimatedRoute(page: HomePage()),
+        (route) => false,
+      );
+    }
   }
 
-// отображение картинки
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return initWidget();
-  }
-
-  Widget initWidget() {
-    return Scaffold(
-      body: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(color: Color(0xFF3F51B5)),
-          ),
-          Center(
-            child: Container(
+    return AnimatedBuilder(
+      animation: _colorAnimation,
+      builder: (context, child) {
+        return Scaffold(
+          body: Container(
+            color: _colorAnimation.value,
+            child: Center(
               child: Image.asset('images/rb_6820.png'),
             ),
-          )
-        ],
-      ),
+          ),
+        );
+      },
     );
   }
 }

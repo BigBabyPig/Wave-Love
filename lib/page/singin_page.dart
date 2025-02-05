@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
-import 'my_custom_painter.dart';
-import 'login_singin.dart';
+import 'package:wl/page/authorization/reg.dart';
+import '../anim/my_custom_painter.dart';
 
-class LoginScreen extends StatefulWidget {
+class RegPage extends StatefulWidget {
+  const RegPage({Key? key}) : super(key: key);
+
+  static Route<void> route() {
+    return MaterialPageRoute(builder: (context) => const RegPage());
+  }
+
   @override
   State<StatefulWidget> createState() => InitState();
 }
 
-class InitState extends State<LoginScreen> {
+class InitState extends State<RegPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -20,7 +26,7 @@ class InitState extends State<LoginScreen> {
             ),
           ),
           BatmanCon(),
-          LoginSignin()
+          Reg()
         ],
       ),
     );
